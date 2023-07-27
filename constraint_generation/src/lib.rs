@@ -78,7 +78,7 @@ pub fn build_circuit(program: ProgramArchive, config: BuildConfig) -> BuildRespo
 }
 
 type InstantiationResponse = Result<(ExecutedProgram, ReportCollection), ReportCollection>;
-fn instantiation(program: &ProgramArchive, flags: FlagsExecution, prime: &String) -> InstantiationResponse {
+pub fn instantiation(program: &ProgramArchive, flags: FlagsExecution, prime: &String) -> InstantiationResponse {
     let execution_result = execute::constraint_execution(&program, flags, prime);
     match execution_result {
         Ok((program_exe, warnings)) => {
@@ -92,12 +92,12 @@ fn instantiation(program: &ProgramArchive, flags: FlagsExecution, prime: &String
     }
 }
 
-fn export(exe: ExecutedProgram, program: ProgramArchive, flags: FlagsExecution) -> ExportResult {
+pub fn export(exe: ExecutedProgram, program: ProgramArchive, flags: FlagsExecution) -> ExportResult {
     let exported = exe.export(program, flags);
     exported
 }
 
-fn sync_dag_and_vcp(vcp: &mut VCP, dag: &mut DAG) {
+pub fn sync_dag_and_vcp(vcp: &mut VCP, dag: &mut DAG) {
     let witness = Rc::new(DAG::produce_witness(dag));
     VCP::add_witness_list(vcp, Rc::clone(&witness));
 }

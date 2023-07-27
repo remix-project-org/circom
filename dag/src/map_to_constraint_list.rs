@@ -3,13 +3,13 @@ use constraint_list::{ConstraintList, DAGEncoding, EncodingEdge, EncodingNode, S
 use program_structure::utils::constants::UsefulConstants;
 use std::collections::{HashSet, LinkedList};
 #[derive(Default)]
-struct CHolder {
-    linear: LinkedList<Constraint>,
-    equalities: LinkedList<Constraint>,
-    constant_equalities: LinkedList<Constraint>,
+pub struct CHolder {
+    pub linear: LinkedList<Constraint>,
+    pub equalities: LinkedList<Constraint>,
+    pub constant_equalities: LinkedList<Constraint>,
 }
 
-fn map_tree(
+pub fn map_tree(
     tree: &Tree,
     witness: &mut Vec<usize>,
     c_holder: &mut CHolder,
@@ -43,7 +43,7 @@ fn map_tree(
     no_constraints
 }
 
-fn produce_encoding(
+pub fn produce_encoding(
     no_constraints: usize,
     init: usize,
     dag_nodes: Vec<Node>,

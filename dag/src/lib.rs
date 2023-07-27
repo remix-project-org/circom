@@ -1,6 +1,6 @@
 mod constraint_correctness_analysis;
 mod json_porting;
-mod map_to_constraint_list;
+pub mod map_to_constraint_list;
 mod r1cs_porting;
 mod sym_porting;
 mod witness_producer;
@@ -146,7 +146,7 @@ pub struct Node {
     ordered_signals: Vec<String>,
     locals: HashSet<usize>,
     reachables: HashSet<usize>, // locals and io of subcomponents
-    forbidden_if_main: HashSet<usize>,
+    pub forbidden_if_main: HashSet<usize>,
     io_signals: Vec<usize>,
     constraints: Vec<Constraint>,
     underscored_signals: Vec<usize>,

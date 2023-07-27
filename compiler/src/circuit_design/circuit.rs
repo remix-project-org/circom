@@ -595,4 +595,7 @@ impl Circuit {
         wasm_code_generator::generate_witness_calculator_js_file(&js_folder_path).map_err(|_err| {})?;
         self.write_wasm(writer, &self.wasm_producer)
     }
+    pub fn generate_wasm(&self) -> Result<String, ()> {
+        Result::Ok(self.produce_wasm_string(&self.wasm_producer))
+    }
 }
