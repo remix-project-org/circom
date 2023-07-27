@@ -8,8 +8,8 @@ extern crate lalrpop_util;
 lalrpop_mod!(pub lang);
 
 mod include_logic;
-mod parser_logic;
-mod syntax_sugar_remover;
+pub mod parser_logic;
+pub mod syntax_sugar_remover;
 
 use include_logic::{FileStack, IncludesGraph};
 use program_structure::ast::{produce_compiler_version_report, produce_report, produce_report_with_message, produce_version_warning_report, Expression};
@@ -160,7 +160,7 @@ pub fn run_parser(
     }
 }
 
-fn produce_report_with_main_components(main_components: Vec<(usize, (Vec<String>, Expression), bool)>) -> Report {
+pub fn produce_report_with_main_components(main_components: Vec<(usize, (Vec<String>, Expression), bool)>) -> Report {
     let mut j = 0;
     let mut r = produce_report(ReportCode::MultipleMain, 0..0, 0);
     for (i,exp,_) in main_components{
@@ -183,7 +183,7 @@ fn open_file(path: PathBuf) -> Result<(String, String), Report> /* path, src */ 
         .map_err(|_| produce_report_with_message(ReportCode::FileOs, path_str.clone()))
 }
 
-fn parse_number_version(version: &str) -> Version {
+pub fn parse_number_version(version: &str) -> Version {
     let version_splitted: Vec<&str> = version.split(".").collect();
     (
         usize::from_str(version_splitted[0]).unwrap(),
@@ -192,7 +192,7 @@ fn parse_number_version(version: &str) -> Version {
     )
 }
 
-fn check_number_version(
+pub fn check_number_version(
     file_path: String,
     version_file: Option<Version>,
     version_compiler: Version,
@@ -214,7 +214,7 @@ fn check_number_version(
     }
 }
 
-fn check_custom_gates_version(
+pub fn check_custom_gates_version(
     file_path: String,
     version_file: Option<Version>,
     version_compiler: Version,
