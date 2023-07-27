@@ -103,7 +103,7 @@ impl Report {
         self
     }
 
-    fn to_diagnostic(&self) -> Diagnostic<FileID> {
+    pub fn to_diagnostic(&self) -> Diagnostic<FileID> {
         let mut labels = self.get_primary().clone();
         let mut secondary = self.get_secondary().clone();
         labels.append(&mut secondary);
