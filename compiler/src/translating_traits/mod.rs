@@ -26,4 +26,9 @@ pub trait WriteWasm {
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})
     }
+    fn produce_wasm_string(&self, producer: &WASMProducer) -> String {
+        let wasm_instructions = self.produce_wasm(producer);
+        
+        wasm_code_generator::merge_code(wasm_instructions)
+    }
 }

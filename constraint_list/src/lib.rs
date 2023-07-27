@@ -5,25 +5,27 @@ use circom_algebra::num_bigint::BigInt;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::ConstraintExporter;
 
-mod constraint_simplification;
+pub mod constraint_simplification;
 mod json_porting;
-mod non_linear_utils;
+pub mod non_linear_utils;
 mod r1cs_porting;
-mod state_utils;
+pub mod state_utils;
 mod sym_porting;
-mod non_linear_simplification;
+pub mod non_linear_simplification;
 
-type C = circom_algebra::algebra::Constraint<usize>;
-type S = circom_algebra::algebra::Substitution<usize>;
+pub type C = circom_algebra::algebra::Constraint<usize>;
+pub type S = circom_algebra::algebra::Substitution<usize>;
 type A = circom_algebra::algebra::ArithmeticExpression<usize>;
-type SignalMap = HashMap<usize, usize>;
+pub type SignalMap = HashMap<usize, usize>;
 type SEncoded = HashMap<usize, A>;
 type SFrames = LinkedList<SEncoded>;
 
+#[derive(Clone)]
 pub struct SignalInfo {
     pub name: String,
     pub id: usize,
 }
+#[derive(Clone)]
 pub struct EncodingNode {
     pub id: usize,
     pub name: String,
@@ -33,13 +35,14 @@ pub struct EncodingNode {
     pub non_linear: LinkedList<C>,
     pub is_custom_gate: bool,
 }
-
+#[derive(Clone)]
 pub struct EncodingEdge {
     pub goes_to: usize,
     pub path: String,
     pub offset: usize,
 }
 
+#[derive(Clone)]
 pub struct DAGEncoding {
     pub init: usize,
     pub no_constraints: usize,

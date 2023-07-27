@@ -6,9 +6,9 @@ use constraint_writers::json_writer::SubstitutionJSON;
 use std::collections::{HashMap, HashSet, LinkedList, BTreeSet};
 use std::sync::Arc;
 
-const SUB_LOG: &str = "./log_substitution.json";
+pub const SUB_LOG: &str = "./log_substitution.json";
 
-fn log_substitutions(substitutions: &LinkedList<S>, writer: &mut Option<SubstitutionJSON>) {
+pub fn log_substitutions(substitutions: &LinkedList<S>, writer: &mut Option<SubstitutionJSON>) {
     use super::json_porting::port_substitution;
     if let Some(w) = writer {
         for s in substitutions {
@@ -19,9 +19,9 @@ fn log_substitutions(substitutions: &LinkedList<S>, writer: &mut Option<Substitu
 }
 
 #[derive(Default, Clone)]
-struct Cluster {
-    constraints: LinkedList<C>,
-    num_signals: usize
+pub struct Cluster {
+    pub constraints: LinkedList<C>,
+    pub num_signals: usize
 }
 impl Cluster {
     pub fn new(constraint: C, num_signals: usize) -> Cluster {
@@ -44,7 +44,7 @@ impl Cluster {
     }
 }
 
-fn build_clusters(linear: LinkedList<C>, no_vars: usize) -> Vec<Cluster> {
+pub fn build_clusters(linear: LinkedList<C>, no_vars: usize) -> Vec<Cluster> {
     type ClusterArena = Vec<Option<Cluster>>;
     type ClusterPath = Vec<usize>;
     fn shrink_jumps_and_find(c_to_c: &mut ClusterPath, org: usize) -> usize {
@@ -100,7 +100,7 @@ fn build_clusters(linear: LinkedList<C>, no_vars: usize) -> Vec<Cluster> {
     clusters
 }
 
-fn rebuild_witness(
+pub fn rebuild_witness(
     max_signal: usize, 
     deleted: &mut HashSet<usize>, 
     forbidden: &HashSet<usize>, 
@@ -125,7 +125,7 @@ fn rebuild_witness(
     map
 }
 
-fn eq_cluster_simplification(
+pub fn eq_cluster_simplification(
     mut cluster: Cluster,
     forbidden: &HashSet<usize>,
     field: &BigInt,
@@ -252,7 +252,7 @@ fn eq_simplification(
     (substitutions, constraints)
 }
 
-fn constant_eq_simplification(
+pub fn constant_eq_simplification(
     c_eq: LinkedList<C>,
     forbidden: &HashSet<usize>,
     field: &BigInt,
@@ -326,8 +326,8 @@ fn linear_simplification(
     (substitutions, cons)
 }
 
-type SignalToConstraints = HashMap<usize, LinkedList<usize>>;
-fn build_non_linear_signal_map(non_linear: &ConstraintStorage) -> SignalToConstraints {
+pub type SignalToConstraints = HashMap<usize, LinkedList<usize>>;
+pub fn build_non_linear_signal_map(non_linear: &ConstraintStorage) -> SignalToConstraints {
     let mut map = SignalToConstraints::new();
     for c_id in non_linear.get_ids() {
         let constraint = non_linear.read_constraint(c_id).unwrap();
@@ -344,7 +344,7 @@ fn build_non_linear_signal_map(non_linear: &ConstraintStorage) -> SignalToConstr
     map
 }
 
-fn apply_substitution_to_map(
+pub fn apply_substitution_to_map(
     storage: &mut ConstraintStorage,
     map: &mut SignalToConstraints,
     substitutions: &LinkedList<S>,
@@ -397,7 +397,7 @@ fn apply_substitution_to_map(
     linear
 }
 
-fn build_relevant_set(
+pub fn build_relevant_set(
     mut iter: EncodingIterator,
     relevant: &mut HashSet<usize>,
     renames: &SEncoded,
@@ -430,7 +430,7 @@ fn build_relevant_set(
     }
 }
 
-fn remove_not_relevant(substitutions: &mut SEncoded, relevant: &HashSet<usize>) {
+pub fn remove_not_relevant(substitutions: &mut SEncoded, relevant: &HashSet<usize>) {
     let signals: Vec<_> = substitutions.keys().cloned().collect();
     for signal in signals {
         if !HashSet::contains(&relevant, &signal) {
