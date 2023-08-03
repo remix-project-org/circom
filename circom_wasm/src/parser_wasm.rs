@@ -1,10 +1,11 @@
+use parser::parser_logic::{preprocess, produce_generic_report};
 use parser::syntax_sugar_remover::apply_syntactic_sugar;
 use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::FileLibrary;
+use program_structure::file_definition::{FileLibrary, FileID};
 use program_structure::program_archive::ProgramArchive;
 use program_structure::error_code::ReportCode;
-use parser::{parser_logic, check_number_version, parse_number_version, check_custom_gates_version, produce_report_with_main_components};
-use program_structure::ast::produce_report;
+use parser::{check_number_version, parse_number_version, check_custom_gates_version, produce_report_with_main_components, lang};
+use program_structure::ast::{produce_report, AST};
 use crate::VERSION;
 use crate::error_reporting_wasm::print_reports;
 use crate::include_logic_wasm::{FileStack, IncludesGraph};
@@ -43,7 +44,7 @@ fn run_parser_wasm(
             let file_name = (link_libraries2[location]).clone();
             let file_source = (link_libraries_sources2[location]).clone();
             let file_id = file_library.add_file(file_name.clone(), file_source.clone());
-            let program = parser_logic::parse_file(&file_source, file_id).map_err(|e| (file_library.clone(), e))?;
+            let program = parse_file_wasm(&file_source, file_id).map_err(|e| (file_library.clone(), e))?;
 
             if let Some(main) = program.main_component {
                 main_components.push((file_id, main, program.custom_gates));
@@ -126,4 +127,45 @@ fn run_parser_wasm(
             }
         }
     }
+}
+
+fn parse_file_wasm(src: &str, file_id: FileID) -> Result<AST, ReportCollection> {
+    use lalrpop_util::ParseError::*;
+    let mut errors = Vec::new();
+    let preprocess = preprocess(src, file_id)?;
+
+    let ast = lang::ParseAstParser::new()
+        .parse(file_id, &mut errors, &preprocess)
+        // TODO: is this always fatal?
+        .map_err(|parse_error| match parse_error {
+            InvalidToken { location } => 
+                produce_generic_report(
+                "InvalidToken: Circom parser encountered a token (or EOF) it did not expect".to_string(),
+                 location..location, file_id
+                ),
+            UnrecognizedToken { ref token, .. } => 
+                produce_generic_report(
+                "UnrecognizedToken: Circom parser encountered a token it did not expect".to_string(),
+                 token.0..token.2, file_id
+                ),
+            ExtraToken { ref token } => produce_generic_report(
+                "ExtraToken: Cirom parser encountered additional, unexpected tokens".to_string(),
+                 token.0..token.2, file_id
+                ),
+            UnrecognizedEOF { ref location, expected } => produce_generic_report(
+                "UnrecognizedEOF: Circom parser encountered an end of file (EOF) it did not expect".to_string(),
+                0..location.clone(), file_id
+            ),
+            User { error } => produce_generic_report(
+                "User: Circom parser encountered an unexpected error".to_string(),
+                 0..0, file_id
+                )
+        })
+        .map_err(|e| vec![e])?;
+
+    if !errors.is_empty() {
+        return Err(errors.into_iter().collect());
+    }
+
+    Ok(ast)
 }

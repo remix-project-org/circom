@@ -73,7 +73,7 @@ pub fn parse(file_name: String, sources: JsValue) -> String {
     match result {
         Result::Err(report) => {
             // eprintln!("{}", Colour::Red.paint("previous errors were found"));
-            let report_string = format!("[\"{}\"]", report.join("\", \""));
+            let report_string = format!("[{}]", report.join(","));
             return report_string;
         },
         Result::Ok(()) => {
