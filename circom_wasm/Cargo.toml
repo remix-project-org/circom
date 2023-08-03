@@ -12,6 +12,9 @@ readme = "README.md"
 keywords = ["zkproofs", "zksanrks","circuits","compiler"]
 categories = ["compilers"]
 
+[build-dependencies]
+lalrpop = { version = "0.18.1", features = ["lexer"] }
+
 [dependencies]
 parser = {path = "../parser"}
 program_structure = { path = "../program_structure" }
@@ -30,6 +33,7 @@ exitcode = "1.1.2"
 wasm-bindgen = "0.2.63"
 js-sys = "0.3"
 codespan-reporting = "0.9.0"
+lalrpop-util = "0.18.1"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
