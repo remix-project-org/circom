@@ -121,7 +121,7 @@ pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, ReportCollection> {
     Ok(ast)
 }
 
-fn produce_generic_report(format: String, token: std::ops::Range<usize>, file_id: usize) -> Report {
+pub fn produce_generic_report(format: String, token: std::ops::Range<usize>, file_id: usize) -> Report {
     let mut report = Report::error(format, ReportCode::IllegalExpression);
     report.add_primary(token, file_id, "here".to_string());
     report
