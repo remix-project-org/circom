@@ -22,7 +22,7 @@ pub fn print_reports(reports: &[Report]) -> Vec<String> {
             labels.push(format!(r#"{{ "style": "{}", "file_id": "{}", "range": {}, "message": "{}" }}"#, style, label.file_id, range, label.message));
         }
         
-        let labels = labels.join("\", \"");
+        let labels = labels.join(",");
         let severity = if diagnostic_report.severity == Severity::Bug {
             "Bug".to_string()
         } else if diagnostic_report.severity == Severity::Error {

@@ -151,6 +151,8 @@ dependencies = [
  "dag",
  "exitcode",
  "js-sys",
+ "lalrpop",
+ "lalrpop-util",
  "parser",
  "program_structure",
  "type_analysis",
