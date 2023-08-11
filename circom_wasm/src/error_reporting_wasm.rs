@@ -6,7 +6,7 @@ pub fn print_reports(reports: &[Report]) -> Vec<String> {
 
     for report in reports.iter() {
         let diagnostic_report = report.to_diagnostic();
-        let notes: String = diagnostic_report.notes.join("\", \"");
+        let notes: String = diagnostic_report.notes.join(",");
         let mut labels: Vec<String> = Vec::new();
 
         for label in diagnostic_report.labels {
