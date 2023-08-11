@@ -148,6 +148,16 @@ fn start_parser(file_name: String, link_libraries: Vec<String>, link_libraries_s
         return Result::Err(warnings);
     }
 
-    type_analysis_wasm::analyse_project(&mut program_archive)?;
+    let analysis = type_analysis_wasm::analyse_project(&mut program_archive);
+    match analysis {
+        Result::Err(err) => {
+            return Result::Err(err);
+        },
+        Result::Ok(warns) => {
+            if warns.len() > 0 {
+                return Result::Err(warns);
+            }
+        }
+    }
     Result::Ok(())
 }
