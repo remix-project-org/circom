@@ -76,9 +76,10 @@ pub fn parse(file_name: String, sources: JsValue) -> String {
             let report_string = format!("[{}]", report.join(","));
             return report_string;
         },
-        Result::Ok(()) => {
+        Result::Ok(warns) => {
             // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
-            return String::from("Circuit parsing went okay, circom safe");
+            let report_string = format!("[{}]", warns.join(","));
+            return report_string;
         }
     }
 }
@@ -86,10 +87,6 @@ pub fn parse(file_name: String, sources: JsValue) -> String {
 fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>, config: CircuitConfig) -> Result<Vec<u8>, Vec<String>> {
     use execution_wasm::ExecutionConfig;
     let (mut program_archive, warnings) = parser_wasm::parse_project(file_name, link_libraries, link_libraries_sources)?;
-    if warnings.len() > 0 {
-        return Result::Err(warnings);
-    }
-
     let parse_report = type_analysis_wasm::analyse_project(&mut program_archive)?;
     let config = ExecutionConfig {
         no_rounds: 0,
@@ -134,6 +131,9 @@ fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries
             for rp in parse_report.iter() {
                 report.push(rp.to_string());
             }
+            for warns in warnings.iter()  {
+                report.push(warns.to_string());
+            }
             return Err(report);
         }
         Result::Ok(wasm_contents) => {
@@ -142,22 +142,12 @@ fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries
     }
 }
 
-fn start_parser(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>) -> Result<(), Vec<String>> {
-    let (mut program_archive, warnings) = parser_wasm::parse_project(file_name, link_libraries, link_libraries_sources)?;
-    if warnings.len() > 0 {
-        return Result::Err(warnings);
-    }
+fn start_parser(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>) -> Result<Vec<String>, Vec<String>> {
+    let (mut program_archive, parse_warnings) = parser_wasm::parse_project(file_name, link_libraries, link_libraries_sources)?;
+    let mut analysis_warnings = type_analysis_wasm::analyse_project(&mut program_archive)?;
 
-    let analysis = type_analysis_wasm::analyse_project(&mut program_archive);
-    match analysis {
-        Result::Err(err) => {
-            return Result::Err(err);
-        },
-        Result::Ok(warns) => {
-            if warns.len() > 0 {
-                return Result::Err(warns);
-            }
-        }
+    for warns in parse_warnings.iter() {
+        analysis_warnings.push(warns.to_string());
     }
-    Result::Ok(())
+    Result::Ok(analysis_warnings)
 }
