@@ -6,7 +6,8 @@ pub fn print_reports(reports: &[Report]) -> Vec<String> {
 
     for report in reports.iter() {
         let diagnostic_report = report.to_diagnostic();
-        let notes: String = diagnostic_report.notes.join(",");
+        let notes: Vec<String> = diagnostic_report.notes.into_iter().map(|note| format!(r#""{}""#, note.replace("\"", ""))).collect();
+        let notes = notes.join(",");
         let mut labels: Vec<String> = Vec::new();
 
         for label in diagnostic_report.labels {
@@ -18,8 +19,9 @@ pub fn print_reports(reports: &[Report]) -> Vec<String> {
                 "Unknown"
             };
             let range = format!(r#"{{ "start": "{}", "end": "{}" }}"#, label.range.start, label.range.end);
+            let message = label.message.replace("\"", "");
 
-            labels.push(format!(r#"{{ "style": "{}", "file_id": "{}", "range": {}, "message": "{}" }}"#, style, label.file_id, range, label.message));
+            labels.push(format!(r#"{{ "style": "{}", "file_id": "{}", "range": {}, "message": "{}" }}"#, style, label.file_id, range, message));
         }
         
         let labels = labels.join(",");
@@ -34,10 +36,11 @@ pub fn print_reports(reports: &[Report]) -> Vec<String> {
         } else if diagnostic_report.severity == Severity::Warning {
             "Warning".to_string()
         } else {
-            "Unknwon".to_string()
+            "Unknown".to_string()
         };
+        let message = diagnostic_report.message.replace("\"", "");
 
-        json_report.push(format!(r#"{{ "type": "{}", "message": "{}", "labels": [{}], "notes": [{}] }}"#, severity, diagnostic_report.message, labels, notes));
+        json_report.push(format!(r#"{{ "type": "{}", "message": "{}", "labels": [{}], "notes": [{}] }}"#, severity, message, labels, notes));
     }
     json_report
 }
