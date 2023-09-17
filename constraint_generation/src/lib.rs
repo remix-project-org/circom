@@ -10,7 +10,7 @@ use ansi_term::Colour;
 use circom_algebra::algebra::{ArithmeticError, ArithmeticExpression};
 use compiler::hir::very_concrete_program::VCP;
 use constraint_list::ConstraintList;
-use constraint_writers::ConstraintExporter;
+use constraint_writers::{ConstraintExporter, R1csExporter};
 use dag::DAG;
 use execution_data::executed_program::ExportResult;
 use execution_data::ExecutedProgram;
@@ -41,6 +41,7 @@ pub struct FlagsExecution{
 }
 
 pub type ConstraintWriter = Box<dyn ConstraintExporter>;
+pub type R1csConstraintWriter = Box<dyn R1csExporter>;
 type BuildResponse = Result<(ConstraintWriter, VCP), ()>;
 pub fn build_circuit(program: ProgramArchive, config: BuildConfig) -> BuildResponse {
     let files = program.file_library.clone();
