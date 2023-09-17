@@ -4,6 +4,7 @@ use circom_algebra::constraint_storage::ConstraintStorage;
 use circom_algebra::num_bigint::BigInt;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::ConstraintExporter;
+use constraint_writers::R1csExporter;
 
 pub mod constraint_simplification;
 mod json_porting;
@@ -178,6 +179,13 @@ impl ConstraintExporter for ConstraintList {
 
     fn sym(&self, out: &str) -> Result<(), ()> {
         sym_porting::port_sym(self, out)
+    }
+}
+
+impl R1csExporter for ConstraintList {
+    fn r1cs(&self, custom_gates: bool) -> Result<Vec<u8>, ()> {
+        r1cs_porting::port_r1cs_wasm(self, custom_gates)
+        // Result::Ok(Vec::new())
     }
 }
 
