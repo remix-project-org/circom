@@ -1,10 +1,10 @@
 use std::rc::Rc;
 use compiler::hir::very_concrete_program::VCP;
-use constraint_generation::{BuildConfig, ConstraintWriter, FlagsExecution, instantiation, export, sync_dag_and_vcp};
+use constraint_generation::{BuildConfig, ConstraintWriter, FlagsExecution, instantiation, export, sync_dag_and_vcp, R1csConstraintWriter};
 use constraint_list::ConstraintList;
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
-use constraint_writers::ConstraintExporter;
+use constraint_writers::R1csExporter;
 
 use crate::error_reporting_wasm::print_reports;
 
@@ -27,7 +27,7 @@ pub struct ExecutionConfig {
 pub fn execute_project(
     program_archive: ProgramArchive,
     config: ExecutionConfig,
-) -> Result<(ConstraintWriter, VCP), Vec<String>> {
+) -> Result<(R1csConstraintWriter, VCP), Vec<String>> {
     let build_config = BuildConfig {
         no_rounds: config.no_rounds,
         flag_json_sub: config.json_substitution_flag,
@@ -50,7 +50,7 @@ pub fn execute_project(
     Result::Ok((exporter, vcp))
 }
 
-fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(ConstraintWriter, VCP), Vec<String>> {
+fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(R1csConstraintWriter, VCP), Vec<String>> {
     // TODO: Return warnings to be displayed in the browser
     let flags = FlagsExecution {
         verbose: config.flag_verbose,
@@ -78,13 +78,13 @@ fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(C
                     if config.inspect_constraints {
                         print_reports(&warnings);
                     }
-                    if config.flag_f {
-                        sync_dag_and_vcp(&mut vcp, &mut dag);
-                        Result::Ok((Box::new(dag), vcp))
-                    } else {
+                    // if config.flag_f {
+                    //     sync_dag_and_vcp(&mut vcp, &mut dag);
+                    //     Result::Ok((Box::new(dag), vcp))
+                    // } else {
                         let list = simplification_process_wasm(&mut vcp, dag, &config);
                         Result::Ok((Box::new(list), vcp))
-                    }
+                    // }
                 }
             }
         }
@@ -106,10 +106,10 @@ fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) ->
     list
 }
 
-pub fn generate_output_r1cs(exporter: &dyn ConstraintExporter, custom_gates: bool) -> Result<Vec<u8>, Vec<String>> {
-    if let Result::Ok(()) = exporter.r1cs(file, custom_gates) {
+pub fn generate_output_r1cs(exporter: &dyn R1csExporter, custom_gates: bool) -> Result<Vec<u8>, Vec<String>> {
+    if let Result::Ok(r1cs) = exporter.r1cs(custom_gates) {
         // println!("{} {}", Colour::Green.paint("Written successfully:"), file);
-        Result::Ok(())
+        return Result::Ok(r1cs);
     } else {
         // eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
         Result::Err(vec!["Could not write the output in the given path".to_string()])

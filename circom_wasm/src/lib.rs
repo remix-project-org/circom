@@ -86,7 +86,7 @@ pub fn parse(file_name: String, sources: JsValue) -> String {
 }
 
 #[wasm_bindgen]
-pub fn generate_r1cs(file_name: String, sources: JsValue) -> Vec<u8> {
+pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> Vec<u8> {
     if let Some(config) = config.dyn_into::<js_sys::Object>().ok() {
         let prime: JsValue = js_sys::Reflect::get(&config, &"prime".into()).unwrap();
         let prime = prime.as_string().unwrap();
@@ -105,16 +105,16 @@ pub fn generate_r1cs(file_name: String, sources: JsValue) -> Vec<u8> {
             link_libraries.extend(source_keys);
             link_libraries_sources.extend(source_values);
         }
-        let result = start_compiler(file_name, link_libraries, link_libraries_sources, circuit_config);
+        let result = start_r1cs(file_name, link_libraries, link_libraries_sources, circuit_config);
 
         match result {
             Result::Err(report) => {
                 // println!("{}", Colour::Red.paint("previous errors were found"));
                 return vec![];
             },
-            Result::Ok(wasm_contents) => {
+            Result::Ok(r1cs) => {
                 // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
-                return wasm_contents;
+                return r1cs;
             }
         }
     } else {
@@ -204,21 +204,8 @@ fn start_r1cs(file_name: String, link_libraries: Vec<String>, link_libraries_sou
         json_constraints: "".to_string(),
         prime: config.prime,
     };
-    let (exporter, circuit) = execution_wasm::execute_project(program_archive, execution_config)?;
+    let (exporter, circuit) = execution_wasm::execute_project(program_archive.clone(), execution_config)?;
     let r1cs_details = generate_output_r1cs(exporter.as_ref(), program_archive.custom_gates)?;
 
-    // match compilation_details {
-    //     Result::Err(mut report) => {
-    //         for rp in parse_report.iter() {
-    //             report.push(rp.to_string());
-    //         }
-    //         for warns in warnings.iter()  {
-    //             report.push(warns.to_string());
-    //         }
-    //         return Err(report);
-    //     }
-    //     Result::Ok(wasm_contents) => {
-    //         return Result::Ok(wasm_contents);
-    //     }
-    // }
+    return Result::Ok(r1cs_details);
 }
