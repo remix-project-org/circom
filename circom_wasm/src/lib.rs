@@ -8,6 +8,9 @@ mod constraints_wasm;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+use std::collections::HashMap;
+
+use js_sys::Array;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
 
@@ -17,9 +20,42 @@ use crate::execution_wasm::generate_output_r1cs;
 struct CircuitConfig {
     prime: String
 }
+#[wasm_bindgen]
+pub struct CompilationResult {
+    program: Vec<u8>,
+    input_signals: HashMap<String, Vec<String>>,
+    report: String
+}
+
 
 #[wasm_bindgen]
-pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Vec<u8> {
+impl CompilationResult {
+    pub fn program(&self) -> js_sys::Uint8Array {
+        let result = js_sys::Uint8Array::new_with_length(self.program.len() as u32);
+        result.copy_from(&self.program);
+        result
+    }
+
+    pub fn input_signals(&self, name: &str) -> Array {
+        if let Some(signals) = self.input_signals.get(name) {
+            let mut result = js_sys::Array::new_with_length(signals.len() as u32);
+
+            for signal in signals {
+                result.push(&JsValue::from(signal));
+            }
+            result
+        } else {
+            Array::new()
+        }
+    }
+
+    pub fn report(&self) -> JsValue {
+        JsValue::from_str(&self.report)
+    }
+}
+
+#[wasm_bindgen]
+pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> CompilationResult {
     if let Some(config) = config.dyn_into::<js_sys::Object>().ok() {
         let prime: JsValue = js_sys::Reflect::get(&config, &"prime".into()).unwrap();
         let prime = prime.as_string().unwrap();
@@ -43,15 +79,20 @@ pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Vec<u8>
         match result {
             Result::Err(report) => {
                 // println!("{}", Colour::Red.paint("previous errors were found"));
-                return vec![];
+                let report_string = format!("[{}]", report.join(","));
+                let compilation_result = CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report: report_string };
+
+                return compilation_result;
             },
-            Result::Ok(wasm_contents) => {
+            Result::Ok((wasm_contents, templates_name_values)) => {
                 // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
-                return wasm_contents;
+                let compilation_result = CompilationResult { program: wasm_contents, input_signals: templates_name_values, report: "".to_string() };
+
+                return compilation_result;
             }
         }
     } else {
-        return vec![0];
+        CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report: "Invalid config provided".to_string() }
     }
 }
 
@@ -122,7 +163,7 @@ pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> Ve
     }
 }
 
-fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>, config: CircuitConfig) -> Result<Vec<u8>, Vec<String>> {
+fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>, config: CircuitConfig) -> Result<(Vec<u8>, HashMap<String, Vec<String>>), Vec<String>> {
     use execution_wasm::ExecutionConfig;
     let (mut program_archive, warnings) = parser_wasm::parse_project(file_name, link_libraries, link_libraries_sources)?;
     let parse_report = type_analysis_wasm::analyse_project(&mut program_archive)?;
@@ -141,7 +182,7 @@ fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries
         json_constraints: "".to_string(),
         prime: config.prime,
     };
-    let (_, circuit) = execution_wasm::execute_project(program_archive, execution_config)?;
+    let (_, circuit) = execution_wasm::execute_project(program_archive.clone(), execution_config)?;
     let compilation_config = CompilerConfig {
         vcp: circuit,
         debug_output: false,
@@ -170,7 +211,16 @@ fn start_compiler(file_name: String, link_libraries: Vec<String>, link_libraries
             return Err(report);
         }
         Result::Ok(wasm_contents) => {
-            return Result::Ok(wasm_contents);
+            let circuit_templates = program_archive.get_templates();
+            let mut template_names_values = HashMap::new();
+
+            for template_data in circuit_templates.iter() {
+                let input_signals = template_data.1.get_inputs();
+
+                template_names_values.insert(template_data.0.to_string(), input_signals.keys().cloned().collect());
+            }
+            
+            return Result::Ok((wasm_contents, template_names_values));
         }
     }
 }
