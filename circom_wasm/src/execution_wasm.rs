@@ -1,12 +1,11 @@
 use std::rc::Rc;
 use compiler::hir::very_concrete_program::VCP;
-use constraint_generation::{BuildConfig, ConstraintWriter, FlagsExecution, instantiation, export, sync_dag_and_vcp, R1csConstraintWriter};
+use constraint_generation::{BuildConfig, FlagsExecution, instantiation, export};
 use constraint_list::ConstraintList;
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
-use constraint_writers::R1csExporter;
 
-use crate::error_reporting_wasm::print_reports;
+use crate::{error_reporting_wasm::print_reports, constraints_writer_wasm::{R1csConstraintWriter, R1csExporter}};
 
 pub struct ExecutionConfig {
     pub sym: String,
@@ -112,7 +111,7 @@ pub fn generate_output_r1cs(exporter: &dyn R1csExporter, custom_gates: bool) -> 
         return Result::Ok(r1cs);
     } else {
         // eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
-        Result::Err(vec!["Could not write the output in the given path".to_string()])
+        Result::Err(vec!["Could not generate r1cs output for the selected file".to_string()])
     }
 }
 
