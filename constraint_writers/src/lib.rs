@@ -9,7 +9,3 @@ pub trait ConstraintExporter {
     fn json_constraints(&self, writer: &debug_writer::DebugWriter) -> Result<(), ()>;
     fn sym(&self, out: &str) -> Result<(), ()>;
 }
-
-pub trait R1csExporter {
-    fn r1cs(&self, custom_gates: bool) -> Result<Vec<u8>, ()>;
-}
