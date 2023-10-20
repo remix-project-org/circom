@@ -10,16 +10,16 @@ use crate::VERSION;
 use crate::error_reporting_wasm::print_reports;
 use crate::include_logic_wasm::{FileStack, IncludesGraph};
 
-pub fn parse_project(file: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>) -> Result<(ProgramArchive, Vec<String>), Vec<String>> {
+pub fn parse_project(file: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>) -> Result<(ProgramArchive, FileLibrary, Vec<String>), (FileLibrary, Vec<String>)> {
     let result_program_archive = run_parser_wasm(file, VERSION, link_libraries, link_libraries_sources);
     match result_program_archive {
-        Result::Err((_, report_collection)) => {
+        Result::Err((file_library, report_collection)) => {
             let report = print_reports(&report_collection);
-            Result::Err(report)
+            Result::Err((file_library, report))
         }
-        Result::Ok((program_archive, warnings)) => {
+        Result::Ok((program_archive, file_library, warnings)) => {
             let warnings = print_reports(&warnings);
-            Result::Ok((program_archive, warnings))
+            Result::Ok((program_archive, file_library, warnings))
         }
     }
 }
@@ -29,7 +29,7 @@ fn run_parser_wasm(
     version: &str,
     link_libraries: Vec<String>,
     link_libraries_sources: Vec<String>
-) -> Result<(ProgramArchive, ReportCollection), (FileLibrary, ReportCollection)> {
+) -> Result<(ProgramArchive, FileLibrary, ReportCollection), (FileLibrary, ReportCollection)> {
     let mut file_library = FileLibrary::new();
     let mut definitions = Vec::new();
     let mut main_components = Vec::new();
@@ -103,7 +103,7 @@ fn run_parser_wasm(
         } else {
             let (main_id, main_component, custom_gates) = main_components.pop().unwrap();
             let result_program_archive = ProgramArchive::new(
-                file_library,
+                file_library.clone(),
                 main_id,
                 main_component,
                 definitions,
@@ -121,7 +121,7 @@ fn run_parser_wasm(
                         Result::Err(v) => {
                             warnings.push(v);
                             Result::Err((lib, warnings))},
-                        Result::Ok(_) => Ok((program_archive, warnings)),
+                        Result::Ok(_) => Ok((program_archive, file_library, warnings)),
                     }
                 }
             }
