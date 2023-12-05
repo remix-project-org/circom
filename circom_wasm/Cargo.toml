@@ -1,6 +1,6 @@
 [package]
 name = "circom_wasm"
-version = "2.1.5"
+version = "2.1.6"
 authors = ["Costa Group UCM","iden3"]
 edition = "2018"
 
@@ -13,7 +13,7 @@ keywords = ["zkproofs", "zksanrks","circuits","compiler"]
 categories = ["compilers"]
 
 [build-dependencies]
-lalrpop = { version = "0.18.1", features = ["lexer"] }
+lalrpop = { version = "0.19.9", features = ["lexer"] }
 
 [dependencies]
 parser = {path = "../parser"}
@@ -33,7 +33,7 @@ exitcode = "1.1.2"
 wasm-bindgen = "0.2.63"
 js-sys = "0.3"
 codespan-reporting = "0.9.0"
-lalrpop-util = "0.18.1"
+lalrpop-util = "0.19.9"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
