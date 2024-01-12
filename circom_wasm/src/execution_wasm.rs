@@ -5,7 +5,7 @@ use constraint_list::ConstraintList;
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
 
-use crate::{error_reporting_wasm::print_reports, constraints_writer_wasm::{R1csConstraintWriter, R1csExporter}};
+use crate::{error_reporting_wasm::print_reports, constraints_writer_wasm::{R1csConstraintWriter, R1csExporter}, log_writer_wasm::LogWasm};
 
 pub struct ExecutionConfig {
     pub sym: String,
@@ -105,10 +105,10 @@ fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) ->
     list
 }
 
-pub fn generate_output_r1cs(exporter: &dyn R1csExporter, custom_gates: bool) -> Result<Vec<u8>, Vec<String>> {
-    if let Result::Ok(r1cs) = exporter.r1cs(custom_gates) {
+pub fn generate_output_r1cs(exporter: &dyn R1csExporter, custom_gates: bool) -> Result<(Vec<u8>, LogWasm), Vec<String>> {
+    if let Result::Ok((r1cs, log)) = exporter.r1cs(custom_gates) {
         // println!("{} {}", Colour::Green.paint("Written successfully:"), file);
-        return Result::Ok(r1cs);
+        return Result::Ok((r1cs, log));
     } else {
         // eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
         Result::Err(vec!["Could not generate r1cs output for the selected file".to_string()])

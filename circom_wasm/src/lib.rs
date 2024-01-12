@@ -8,6 +8,7 @@ mod constraints_wasm;
 mod constraints_writer_wasm;
 mod r1cs_porting_wasm;
 mod r1cs_writer_wasm;
+mod log_writer_wasm;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -16,6 +17,7 @@ use std::collections::HashMap;
 use execution_wasm::ExecutionConfig;
 use compiler::hir::very_concrete_program::VCP;
 use js_sys::Array;
+use log_writer_wasm::LogWasm;
 use program_structure::file_definition::FileLibrary;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -30,7 +32,8 @@ struct CircuitConfig {
 pub struct CompilationResult {
     program: Vec<u8>,
     input_signals: HashMap<String, Vec<String>>,
-    report: String
+    report: String,
+    logs: LogWasm
 }
 
 
@@ -58,12 +61,23 @@ impl CompilationResult {
     pub fn report(&self) -> JsValue {
         JsValue::from_str(&self.report)
     }
+
+    pub fn logs (&self) -> Array {
+        let logs_vec = LogWasm::print_array(&self.logs);
+        let result = js_sys::Array::new_with_length(logs_vec.len() as u32);
+
+        for log in logs_vec {
+            result.push(&JsValue::from(log));
+        }
+        result
+    }
 }
 
 #[wasm_bindgen]
 pub struct R1csResult {
     program: Vec<u8>,
-    report: String
+    report: String,
+    logs: LogWasm
 }
 
 #[wasm_bindgen]
@@ -77,6 +91,16 @@ impl R1csResult {
 
     pub fn report (&self) -> JsValue {
         JsValue::from_str(&self.report)
+    }
+
+    pub fn logs (&self) -> Array {
+        let logs_vec = LogWasm::print_array(&self.logs);
+        let result = js_sys::Array::new_with_length(logs_vec.len() as u32);
+
+        for log in logs_vec {
+            result.push(&JsValue::from(log));
+        }
+        result
     }
 }
 
@@ -108,7 +132,7 @@ pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Compila
 
     match processed_input {
         Result::Err(report) => {
-            CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report }
+            CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report, logs: LogWasm::new() }
         },
         Result:: Ok((link_libraries, link_libraries_sources, circuit_config)) => {
             let result = start_compiler(file_name, link_libraries, link_libraries_sources, circuit_config);
@@ -117,13 +141,16 @@ pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Compila
                 Result::Err(report) => {
                     // println!("{}", Colour::Red.paint("previous errors were found"));
                     let report_string = format!("[{}]", report.join(","));
-                    let compilation_result = CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report: report_string };
+                    let compilation_result = CompilationResult { program: Vec::new(), input_signals: HashMap::new(), report: report_string, logs: LogWasm::new() };
     
                     return compilation_result;
                 },
                 Result::Ok((wasm_contents, templates_name_values)) => {
                     // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
-                    let compilation_result = CompilationResult { program: wasm_contents, input_signals: templates_name_values, report: "".to_string() };
+                    let mut logs = LogWasm::new();
+
+                    logs.is_successful = true;
+                    let compilation_result = CompilationResult { program: wasm_contents, input_signals: templates_name_values, report: "".to_string(), logs };
     
                     return compilation_result;
                 }
@@ -168,7 +195,7 @@ pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> R1
 
     match processed_input {
         Result::Err(report) => {
-            R1csResult { program: Vec::new(), report }
+            R1csResult { program: Vec::new(), report, logs: LogWasm::new() }
         },
         Result::Ok((link_libraries, link_libraries_sources, circuit_config)) => {
             let result = start_r1cs(file_name, link_libraries, link_libraries_sources, circuit_config);
@@ -178,11 +205,12 @@ pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> R1
                     // println!("{}", Colour::Red.paint("previous errors were found"));
                     let report_string = format!("[{}]", report.join(","));
 
-                    R1csResult { program: Vec::new(), report: report_string }
+                    R1csResult { program: Vec::new(), report: report_string, logs: LogWasm::new() }
                 },
-                Result::Ok(r1cs) => {
+                Result::Ok((r1cs, mut logs)) => {
+                    logs.is_successful = true;
                     // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
-                    R1csResult { program: r1cs, report: "".to_string() }
+                    R1csResult { program: r1cs, report: "".to_string(), logs }
                 }
             }
         }
@@ -253,7 +281,7 @@ fn start_parser(file_name: String, link_libraries: Vec<String>, link_libraries_s
     }
 }
 
-fn start_r1cs(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>, config: CircuitConfig) -> Result<Vec<u8>, Vec<String>> {
+fn start_r1cs(file_name: String, link_libraries: Vec<String>, link_libraries_sources: Vec<String>, config: CircuitConfig) -> Result<(Vec<u8>, LogWasm), Vec<String>> {
     let program = parser_wasm::parse_project(file_name, link_libraries, link_libraries_sources);
    
    match program {
