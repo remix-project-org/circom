@@ -26,7 +26,7 @@ pub struct ExecutionConfig {
 pub fn execute_project(
     program_archive: ProgramArchive,
     config: ExecutionConfig,
-) -> Result<(R1csConstraintWriter, VCP), Vec<String>> {
+) -> Result<(R1csConstraintWriter, VCP, LogWasm), Vec<String>> {
     let build_config = BuildConfig {
         no_rounds: config.no_rounds,
         flag_json_sub: config.json_substitution_flag,
@@ -39,17 +39,17 @@ pub fn execute_project(
         prime : config.prime,
     };
     let custom_gates = program_archive.custom_gates;
-    let (exporter, vcp) = build_circuit_wasm(program_archive, build_config)?;
+    let (exporter, vcp, log) = build_circuit_wasm(program_archive, build_config)?;
     // if config.sym_flag {
     //     generate_output_sym(&config.sym, exporter.as_ref())?;
     // }
     // if config.json_constraint_flag {
     //     generate_json_constraints(&debug, exporter.as_ref())?;
     // }
-    Result::Ok((exporter, vcp))
+    Result::Ok((exporter, vcp, log))
 }
 
-fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(R1csConstraintWriter, VCP), Vec<String>> {
+fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(R1csConstraintWriter, VCP, LogWasm), Vec<String>> {
     // TODO: Return warnings to be displayed in the browser
     let flags = FlagsExecution {
         verbose: config.flag_verbose,
@@ -81,8 +81,8 @@ fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(R
                     //     sync_dag_and_vcp(&mut vcp, &mut dag);
                     //     Result::Ok((Box::new(dag), vcp))
                     // } else {
-                        let list = simplification_process_wasm(&mut vcp, dag, &config);
-                        Result::Ok((Box::new(list), vcp))
+                        let (list, log) = simplification_process_wasm(&mut vcp, dag, &config);
+                        Result::Ok((Box::new(list), vcp, log))
                     // }
                 }
             }
@@ -90,7 +90,7 @@ fn build_circuit_wasm(program: ProgramArchive, config: BuildConfig) -> Result<(R
     }
 }
 
-fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) -> ConstraintList {
+fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) -> (ConstraintList, LogWasm) {
     use dag::SimplificationFlags;
     let flags = SimplificationFlags {
         flag_s: config.flag_s,
@@ -100,9 +100,9 @@ fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) ->
         flag_old_heuristics: config.flag_old_heuristics,
         prime : config.prime.clone(),
     };
-    let list: ConstraintList = crate::constraints_wasm::map(dag, flags);
+    let (list, log) = crate::constraints_wasm::map(dag, flags);
     VCP::add_witness_list(vcp, Rc::new(list.get_witness_as_vec()));
-    list
+    (list, log)
 }
 
 pub fn generate_output_r1cs(exporter: &dyn R1csExporter, custom_gates: bool) -> Result<(Vec<u8>, LogWasm), Vec<String>> {
