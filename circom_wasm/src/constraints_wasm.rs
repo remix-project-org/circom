@@ -7,7 +7,9 @@ use dag::{DAG, SimplificationFlags, Tree, map_to_constraint_list::{CHolder, map_
 use program_structure::constants::UsefulConstants;
 use circom_algebra::num_bigint::BigInt;
 
-pub fn map(dag: DAG, flags: SimplificationFlags) -> ConstraintList {
+use crate::log_writer_wasm::LogWasm;
+
+pub fn map(dag: DAG, flags: SimplificationFlags) -> (ConstraintList, LogWasm) {
     // use std::time::SystemTime;
     // println!("Start of dag to list mapping");
     // let now = SystemTime::now();
@@ -46,9 +48,9 @@ pub fn map(dag: DAG, flags: SimplificationFlags) -> ConstraintList {
     simplify_constraints_wasm(&mut simplifier)
 }
 
-fn simplify_constraints_wasm(simplifier: &mut Simplifier) -> ConstraintList {
+fn simplify_constraints_wasm(simplifier: &mut Simplifier) -> (ConstraintList, LogWasm) {
     let (portable, map) = simplification_wasm(simplifier);
-    ConstraintList {
+    let list = ConstraintList {
         field: simplifier.field.clone(),
         dag_encoding: simplifier.dag_encoding.clone(),
         no_public_outputs: simplifier.no_public_outputs,
@@ -57,7 +59,15 @@ fn simplify_constraints_wasm(simplifier: &mut Simplifier) -> ConstraintList {
         no_labels: simplifier.max_signal,
         constraints: portable,
         signal_map: map,
-    }
+    };
+    let mut log = LogWasm::new();
+    log.no_labels = ConstraintList::no_labels(&list);
+    log.no_wires = ConstraintList::no_wires(&list);
+    log.no_private_inputs = list.no_private_inputs;
+    log.no_public_inputs = list.no_public_inputs;
+    log.no_public_outputs = list.no_public_outputs;
+
+    (list, log)
 }
 
 fn simplification_wasm(smp: &mut Simplifier) -> (ConstraintStorage, SignalMap) {

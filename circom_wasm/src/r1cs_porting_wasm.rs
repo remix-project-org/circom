@@ -1,16 +1,16 @@
 use constraint_list::{ConstraintList, C, EncodingIterator, SignalMap};
 use constraint_writers::r1cs_writer::{HeaderData, CustomGatesAppliedData};
 
-use crate::r1cs_writer_wasm::{R1CSWriterWasm, ConstraintSectionWasm, SignalSectionWasm};
+use crate::{r1cs_writer_wasm::{R1CSWriterWasm, ConstraintSectionWasm, SignalSectionWasm}, log_writer_wasm::LogWasm};
 
-pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<Vec<u8>, ()> {
+pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<u8>, LogWasm), ()> {
     use constraint_writers::log_writer::Log;
     let field_size = if list.field.bits() % 64 == 0 {
         list.field.bits() / 8
     } else{
         (list.field.bits() / 64 + 1) * 8
     };
-    let mut log = Log::new();
+    let mut log = LogWasm::new();
     log.no_labels = ConstraintList::no_labels(list);
     log.no_wires = ConstraintList::no_wires(list);
     log.no_private_inputs = list.no_private_inputs;
@@ -57,7 +57,7 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<Vec<u
     let (r1cs, start) = signal_section.end_section()?;
     if !custom_gates {
 	    // R1CSWriterWasm::finish_writing(r1cs)?;
-        return Result::Ok(r1cs.output)
+        return Result::Ok((r1cs.output, log))
     } else {
         let mut custom_gates_used_section = R1CSWriterWasm::start_custom_gates_used_section(r1cs, start)?;
         let (usage_data, occurring_order) = {
@@ -122,10 +122,10 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<Vec<u
         custom_gates_applied_section.write_custom_gates_applications(application_data)?;
         let (r1cs, _) = custom_gates_applied_section.end_section()?;
 	//     // R1CSWriterWasm::finish_writing(r1cs)?;
-        return Result::Ok(r1cs.output);
+        return Result::Ok((r1cs.output, log));
     }
     // return Result::Ok(r1cs.output);
-    // return  Result::Ok(vec![written]);
+    // return  Result::Ok(vec![written]);   
     // return Result::Ok(r1cs.output);
     
     // Log::print(&log);
