@@ -49,13 +49,14 @@ pub fn map(dag: DAG, flags: SimplificationFlags) -> (ConstraintList, LogWasm) {
 }
 
 fn simplify_constraints_wasm(simplifier: &mut Simplifier) -> (ConstraintList, LogWasm) {
-    let (portable, map) = simplification_wasm(simplifier);
+    let (portable, map, private_inputs_witness) = simplification_wasm(simplifier);
     let list = ConstraintList {
         field: simplifier.field.clone(),
         dag_encoding: simplifier.dag_encoding.clone(),
         no_public_outputs: simplifier.no_public_outputs,
         no_public_inputs: simplifier.no_public_inputs,
         no_private_inputs: simplifier.no_private_inputs,
+        no_private_inputs_witness: private_inputs_witness,
         no_labels: simplifier.max_signal,
         constraints: portable,
         signal_map: map,
@@ -70,7 +71,9 @@ fn simplify_constraints_wasm(simplifier: &mut Simplifier) -> (ConstraintList, Lo
     (list, log)
 }
 
-fn simplification_wasm(smp: &mut Simplifier) -> (ConstraintStorage, SignalMap) {
+
+// returns the constraints, the assignment of the witness and the number of inputs in the witness
+fn simplification_wasm(smp: &mut Simplifier) -> (ConstraintStorage, SignalMap, usize) {
     use circom_algebra::simplification_utils::build_encoded_fast_substitutions;
     use circom_algebra::simplification_utils::fast_encoded_constraint_substitution;
     // use std::time::SystemTime;
@@ -323,17 +326,32 @@ fn simplification_wasm(smp: &mut Simplifier) -> (ConstraintStorage, SignalMap) {
     let signal_map = {
         // println!("Rebuild witness");
         // let now = SystemTime::now();
-        let signal_map = rebuild_witness(max_signal, deleted, &forbidden, non_linear_map, remove_unused);
+        let signal_map = rebuild_witness(
+            max_signal,
+            &mut deleted,
+            &forbidden,
+            non_linear_map,
+            remove_unused
+        );
         // let _dur = now.elapsed().unwrap().as_millis();
         // println!("End of rebuild witness: {} ms", dur);
         signal_map
     };
 
+    // count the number of deleted inputs
+    let max_value_input = smp.no_public_outputs + smp.no_public_inputs + smp.no_private_inputs;
+    let mut deleted_inputs = 0;
+    for signal in &deleted{
+        if signal >= &(smp.no_public_outputs + 1) && signal <= &max_value_input{
+            deleted_inputs += 1;
+        }
+    }
+
     if let Some(w) = substitution_log {
         w.end().unwrap();
     }
     println!("NO CONSTANTS: {}", constraint_storage.no_constants());
-    (constraint_storage, signal_map)
+    (constraint_storage, signal_map, smp.no_private_inputs - deleted_inputs)
 }
 
 fn eq_simplification_wasm(

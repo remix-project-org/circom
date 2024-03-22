@@ -6,8 +6,8 @@ pub struct LogWasm {
     pub no_wires: usize,
     pub no_public_inputs: usize,
     pub no_private_inputs: usize,
+    pub no_private_inputs_witness: usize,
     pub no_public_outputs: usize,
-    pub no_private_outputs: usize,
     pub is_successful: bool
 }
 
@@ -18,8 +18,8 @@ impl LogWasm {
             no_non_linear: 0,
             no_public_inputs: 0,
             no_private_inputs: 0,
+            no_private_inputs_witness: 0,
             no_public_outputs: 0,
-            no_private_outputs: 0,
             no_wires: 0,
             no_labels: 0,
             is_successful: false
@@ -31,8 +31,6 @@ impl LogWasm {
             let mut output = vec![
                 format!("public inputs: {}", logs.no_public_inputs),
                 format!("public outputs: {}", logs.no_public_outputs),
-                format!("private inputs: {}", logs.no_private_inputs),
-                format!("private outputs: {}", logs.no_private_outputs),
                 format!("wires: {}", logs.no_wires),
                 format!("labels: {}", logs.no_labels)
                 ];
@@ -40,6 +38,14 @@ impl LogWasm {
             if (logs.no_non_linear > 0) || (logs.no_linear > 0) {
                 output.push(format!("non-linear constraints: {}", logs.no_non_linear));
                 output.push(format!("linear constraints: {}", logs.no_linear))
+            }
+
+            if logs.no_private_inputs == logs.no_private_inputs_witness{
+                output.push(format!("private inputs: {}", logs.no_private_inputs));
+            } else if logs.no_private_inputs_witness == 0{
+                output.push(format!("private inputs: {} (none belong to witness)", logs.no_private_inputs));
+            } else{
+                output.push(format!("private inputs: {} ({} belong to witness)", logs.no_private_inputs, logs.no_private_inputs_witness));
             }
 
             output

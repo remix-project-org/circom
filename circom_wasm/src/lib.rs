@@ -146,7 +146,7 @@ pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Compila
                     return compilation_result;
                 },
                 Result::Ok((wasm_contents, templates_name_values, mut log)) => {
-                    // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
+                    // println!("{}", Colour::Green.paint("Everything went okay"));
                     log.is_successful = true;
                     let compilation_result = CompilationResult { program: wasm_contents, input_signals: templates_name_values, report: "".to_string(), log };
     
@@ -180,7 +180,7 @@ pub fn parse(file_name: String, sources: JsValue) -> ParseResult {
             return ParseResult { report: report_string, file_library };
         },
         Result::Ok((file_library, warns)) => {
-            // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
+            // println!("{}", Colour::Green.paint("Everything went okay"));
             let report_string = format!("[{}]", warns.join(","));
             return ParseResult { report: report_string, file_library: file_library }
         }
@@ -207,7 +207,7 @@ pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> R1
                 },
                 Result::Ok((r1cs, mut log)) => {
                     log.is_successful = true;
-                    // println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
+                    // println!("{}", Colour::Green.paint("Everything went okay"));
                     R1csResult { program: r1cs, report: "".to_string(), log }
                 }
             }
