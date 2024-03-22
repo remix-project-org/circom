@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "circom_wasm"
-version = "2.1.6"
+version = "2.1.7"
 dependencies = [
  "ansi_term",
  "circom_algebra",

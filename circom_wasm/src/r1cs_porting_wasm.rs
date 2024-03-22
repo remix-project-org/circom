@@ -4,7 +4,6 @@ use constraint_writers::r1cs_writer::{HeaderData, CustomGatesAppliedData};
 use crate::{r1cs_writer_wasm::{R1CSWriterWasm, ConstraintSectionWasm, SignalSectionWasm}, log_writer_wasm::LogWasm};
 
 pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<u8>, LogWasm), ()> {
-    use constraint_writers::log_writer::Log;
     let field_size = if list.field.bits() % 64 == 0 {
         list.field.bits() / 8
     } else{
@@ -14,6 +13,7 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<
     log.no_labels = ConstraintList::no_labels(list);
     log.no_wires = ConstraintList::no_wires(list);
     log.no_private_inputs = list.no_private_inputs;
+    log.no_private_inputs_witness = list.no_private_inputs_witness;
     log.no_public_inputs = list.no_public_inputs;
     log.no_public_outputs = list.no_public_outputs;
 
