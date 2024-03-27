@@ -8,7 +8,8 @@ pub struct LogWasm {
     pub no_private_inputs: usize,
     pub no_private_inputs_witness: usize,
     pub no_public_outputs: usize,
-    pub is_successful: bool
+    pub is_successful: bool,
+    pub is_compilation_logs: bool
 }
 
 impl LogWasm {
@@ -22,7 +23,8 @@ impl LogWasm {
             no_public_outputs: 0,
             no_wires: 0,
             no_labels: 0,
-            is_successful: false
+            is_successful: false,
+            is_compilation_logs: false
         }
     }
 
@@ -40,12 +42,16 @@ impl LogWasm {
                 output.push(format!("linear constraints: {}", logs.no_linear))
             }
 
-            if logs.no_private_inputs == logs.no_private_inputs_witness{
+            if logs.is_compilation_logs {
                 output.push(format!("private inputs: {}", logs.no_private_inputs));
-            } else if logs.no_private_inputs_witness == 0{
-                output.push(format!("private inputs: {} (none belong to witness)", logs.no_private_inputs));
-            } else{
-                output.push(format!("private inputs: {} ({} belong to witness)", logs.no_private_inputs, logs.no_private_inputs_witness));
+            } else {
+                if logs.no_private_inputs == logs.no_private_inputs_witness{
+                    output.push(format!("private inputs: {}", logs.no_private_inputs));
+                } else if logs.no_private_inputs_witness == 0 {
+                    output.push(format!("private inputs: {} (none belong to witness)", logs.no_private_inputs));
+                } else{
+                    output.push(format!("private inputs: {} ({} belong to witness)", logs.no_private_inputs, logs.no_private_inputs_witness));
+                }
             }
 
             output
