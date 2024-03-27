@@ -148,6 +148,7 @@ pub fn compile (file_name: String, sources: JsValue, config: JsValue) -> Compila
                 Result::Ok((wasm_contents, templates_name_values, mut log)) => {
                     // println!("{}", Colour::Green.paint("Everything went okay"));
                     log.is_successful = true;
+                    log.is_compilation_logs = true;
                     let compilation_result = CompilationResult { program: wasm_contents, input_signals: templates_name_values, report: "".to_string(), log };
     
                     return compilation_result;
@@ -207,6 +208,7 @@ pub fn generate_r1cs(file_name: String, sources: JsValue, config: JsValue) -> R1
                 },
                 Result::Ok((r1cs, mut log)) => {
                     log.is_successful = true;
+                    log.is_compilation_logs = false;
                     // println!("{}", Colour::Green.paint("Everything went okay"));
                     R1csResult { program: r1cs, report: "".to_string(), log }
                 }
