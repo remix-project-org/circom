@@ -1,7 +1,7 @@
 use std::{collections::{HashSet, LinkedList, HashMap}, sync::Arc};
 
 use circom_algebra::constraint_storage::ConstraintStorage;
-use constraint_list::{ConstraintList, Simplifier, SignalMap, EncodingIterator, constraint_simplification::{SignalToConstraints, SUB_LOG, build_relevant_set, remove_not_relevant, constant_eq_simplification, build_non_linear_signal_map, apply_substitution_to_map, rebuild_witness, build_clusters, Cluster, eq_cluster_simplification, log_substitutions}, non_linear_simplification, C, non_linear_utils::obtain_and_simplify_non_linear, state_utils, S};
+use constraint_list::{ConstraintList, Simplifier, SignalMap, EncodingIterator, constraint_simplification::{SignalToConstraints, build_relevant_set, remove_not_relevant, constant_eq_simplification, build_non_linear_signal_map, apply_substitution_to_map, rebuild_witness, build_clusters, Cluster, eq_cluster_simplification, log_substitutions}, non_linear_simplification, C, non_linear_utils::obtain_and_simplify_non_linear, state_utils, S};
 use constraint_writers::json_writer::SubstitutionJSON;
 use dag::{DAG, SimplificationFlags, Tree, map_to_constraint_list::{CHolder, map_tree, produce_encoding}};
 use program_structure::constants::UsefulConstants;
@@ -43,6 +43,7 @@ pub fn map(dag: DAG, flags: SimplificationFlags) -> (ConstraintList, LogWasm) {
         parallel_flag: flags.parallel_flag,
         flag_old_heuristics: flags.flag_old_heuristics,
         port_substitution: flags.port_substitution,
+        json_substitutions: flags.json_substitutions
     };
     
     simplify_constraints_wasm(&mut simplifier)
@@ -79,7 +80,7 @@ fn simplification_wasm(smp: &mut Simplifier) -> (ConstraintStorage, SignalMap, u
     // use std::time::SystemTime;
 
     let mut substitution_log =
-        if smp.port_substitution { Some(SubstitutionJSON::new(SUB_LOG).unwrap()) } else { None };
+        if smp.port_substitution { Some(SubstitutionJSON::new(&smp.json_substitutions).unwrap()) } else { None };
     let apply_linear = !smp.flag_s;
     let use_old_heuristics = smp.flag_old_heuristics;
     let field = smp.field.clone();

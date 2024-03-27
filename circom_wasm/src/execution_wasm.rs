@@ -10,6 +10,7 @@ use crate::{error_reporting_wasm::print_reports, constraints_writer_wasm::{R1csC
 pub struct ExecutionConfig {
     pub sym: String,
     pub json_constraints: String,
+    pub json_substitutions: String,
     pub no_rounds: usize,
     pub flag_s: bool,
     pub flag_f: bool,
@@ -30,6 +31,7 @@ pub fn execute_project(
     let build_config = BuildConfig {
         no_rounds: config.no_rounds,
         flag_json_sub: config.json_substitution_flag,
+        json_substitutions: config.json_substitutions,
         flag_s: config.flag_s,
         flag_f: config.flag_f,
         flag_p: config.flag_p,
@@ -96,6 +98,7 @@ fn simplification_process_wasm(vcp: &mut VCP, dag: DAG, config: &BuildConfig) ->
         flag_s: config.flag_s,
         parallel_flag: config.flag_p,
         port_substitution: config.flag_json_sub,
+        json_substitutions: config.json_substitutions.clone(),
         no_rounds: config.no_rounds,
         flag_old_heuristics: config.flag_old_heuristics,
         prime : config.prime.clone(),

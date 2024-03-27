@@ -338,6 +338,7 @@ fn get_execution_config(circuit_config: CircuitConfig) -> ExecutionConfig {
         sym_flag: false,
         sym: "".to_string(),
         json_constraints: "".to_string(),
+        json_substitutions: "".to_string(),
         prime: circuit_config.prime,
     }
 }
