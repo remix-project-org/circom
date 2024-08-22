@@ -17,27 +17,24 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<
     log.no_public_inputs = list.no_public_inputs;
     log.no_public_outputs = list.no_public_outputs;
 
-    let r1cs = R1CSWriterWasm::new(field_size, custom_gates)?;
-    let mut constraint_section = R1CSWriterWasm::start_constraints_section(r1cs, 0)?;
+    let r1cs = R1CSWriterWasm::new(field_size, custom_gates);
+    let mut constraint_section = R1CSWriterWasm::start_constraints_section(r1cs);
     let mut written = 0;
-    let mut go_backs = vec![constraint_section.go_back];
 
     for c_id in list.constraints.get_ids() {
         let c = list.constraints.read_constraint(c_id).unwrap();
         let c = C::apply_correspondence(&c, &list.signal_map);
-        ConstraintSectionWasm::write_constraint_usize(&mut constraint_section, c.a(), c.b(), c.c())?;
+        ConstraintSectionWasm::write_constraint_usize(&mut constraint_section, c.a(), c.b(), c.c());
         if C::is_linear(&c) {
             log.no_linear += 1;
         } else {
             log.no_non_linear += 1;
         }
         written += 1;
-        go_backs.push(constraint_section.go_back);
     }
 
-    let (r1cs, start) = constraint_section.end_section()?;
-    go_backs.push(start);
-    let mut header_section = R1CSWriterWasm::start_header_section(r1cs, start)?;
+    let r1cs = constraint_section.end_section();
+    let mut header_section = R1CSWriterWasm::start_header_section(r1cs);
     let header_data = HeaderData {
         field: list.field.clone(),
         public_outputs: list.no_public_outputs,
@@ -47,19 +44,19 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<
         number_of_labels: ConstraintList::no_labels(list),
         number_of_constraints: written,
     };
-    header_section.write_section(header_data)?;
-    let (r1cs, start) = header_section.end_section()?;
-    let mut signal_section = R1CSWriterWasm::start_signal_section(r1cs, start)?;
+    header_section.write_section(header_data);
+    let r1cs = header_section.end_section();
+    let mut signal_section = R1CSWriterWasm::start_signal_section(r1cs);
 
     for id in list.get_witness_as_vec() {
-        SignalSectionWasm::write_signal_usize(&mut signal_section, id)?;
+        SignalSectionWasm::write_signal_usize(&mut signal_section, id);
     }
-    let (r1cs, start) = signal_section.end_section()?;
+    let r1cs = signal_section.end_section();
     if !custom_gates {
 	    // R1CSWriterWasm::finish_writing(r1cs)?;
         return Result::Ok((r1cs.output, log))
     } else {
-        let mut custom_gates_used_section = R1CSWriterWasm::start_custom_gates_used_section(r1cs, start)?;
+        let mut custom_gates_used_section = R1CSWriterWasm::start_custom_gates_used_section(r1cs);
         let (usage_data, occurring_order) = {
             let mut usage_data = vec![];
             let mut occurring_order = vec![];
@@ -73,9 +70,9 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<
             }
             (usage_data, occurring_order)
         };
-        custom_gates_used_section.write_custom_gates_usages(usage_data)?;
-        let (r1cs, start) = custom_gates_used_section.end_section()?;
-        let mut custom_gates_applied_section = R1CSWriterWasm::start_custom_gates_applied_section(r1cs, start)?;
+        custom_gates_used_section.write_custom_gates_usages(usage_data);
+        let r1cs = custom_gates_used_section.end_section();
+        let mut custom_gates_applied_section = R1CSWriterWasm::start_custom_gates_applied_section(r1cs);
         let application_data = {
             fn find_indexes(
                 occurring_order: Vec<String>,
@@ -119,13 +116,13 @@ pub fn port_r1cs_wasm(list: &ConstraintList, custom_gates: bool) -> Result<(Vec<
             iterate(iterator, &list.signal_map, &mut application_data);
             find_indexes(occurring_order, application_data)
         };
-        custom_gates_applied_section.write_custom_gates_applications(application_data)?;
-        let (r1cs, _) = custom_gates_applied_section.end_section()?;
+        custom_gates_applied_section.write_custom_gates_applications(application_data);
+        let r1cs = custom_gates_applied_section.end_section();
 	//     // R1CSWriterWasm::finish_writing(r1cs)?;
         return Result::Ok((r1cs.output, log));
     }
     // return Result::Ok(r1cs.output);
-    // return  Result::Ok(vec![written]);   
+    // return  Result::Ok(vec![written]);
     // return Result::Ok(r1cs.output);
     
     // Log::print(&log);
